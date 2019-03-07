@@ -3,11 +3,13 @@ import {DownloadOption} from "../../modules/uv-shared-module/DownloadOption";
 import { DownloadType } from "../uv-seadragon-extension/DownloadType";
 import { BaseEvents } from "../../modules/uv-shared-module/BaseEvents";
 import { IRenderingOption } from "../../modules/uv-shared-module/IRenderingOption";
+import {IAVExtension} from "./IAVExtension";
 
 export class DownloadDialogue extends BaseDownloadDialogue {
 
     $entireFileAsOriginal: JQuery;
     $downloadButton: JQuery;
+    extension: IAVExtension;
 
     constructor($element: JQuery) {
         super($element);
@@ -27,6 +29,10 @@ export class DownloadDialogue extends BaseDownloadDialogue {
         this.$buttons.prepend(this.$downloadButton);
 
         const that = this;
+
+        this.$downloadButton.find('.btn-primary').on('click', () => {
+            $.publish(BaseEvents.EXIT_FULLSCREEN);
+        });
         
         this.$downloadButton.on('click', (e) => {
             e.preventDefault();
@@ -62,7 +68,9 @@ export class DownloadDialogue extends BaseDownloadDialogue {
 
         super.open($triggerButton);
 
-        if (this.isDownloadOptionAvailable(DownloadOption.entireFileAsOriginal) && !this._isAdaptive()) {
+        const hasCanvasRendering = this.isDownloadOptionAvailable(DownloadOption.dynamicCanvasRenderings) && this.extension.isThumbsViewOpen();
+
+        if (this.isDownloadOptionAvailable(DownloadOption.entireFileAsOriginal) && !this._isAdaptive() && !hasCanvasRendering) {
             const $input: JQuery = this.$entireFileAsOriginal.find('input');
             const $label: JQuery = this.$entireFileAsOriginal.find('label');
             const label: string = Utils.Strings.format(this.content.entireFileAsOriginalWithFormat, this.getCurrentResourceFormat());
@@ -73,7 +81,14 @@ export class DownloadDialogue extends BaseDownloadDialogue {
 
         this.resetDynamicDownloadOptions();
 
-        if (this.isDownloadOptionAvailable(DownloadOption.rangeRendering)) {
+        if (hasCanvasRendering) {
+            const canvas = this.extension.helper.getCurrentCanvas();
+            const renderingOptions: IRenderingOption[] = this.getDownloadOptionsForRenderings(canvas, this.content.entireFileAsOriginal, DownloadOption.dynamicCanvasRenderings);
+            // Add to options.
+            this.addDownloadOptionsForRenderings(renderingOptions);
+        }
+
+        if (this.isDownloadOptionAvailable(DownloadOption.rangeRendering) && !this.extension.isThumbsViewOpen()) {
             
             const range: Manifesto.IRange | null = this.extension.helper.getCurrentRange();
 

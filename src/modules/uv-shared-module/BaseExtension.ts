@@ -406,7 +406,7 @@ export class BaseExtension implements IExtension {
             if (range) {
                 this.data.rangeId = range.id;
                 this.helper.rangeId = range.id;
-                this.fire(BaseEvents.RANGE_CHANGED, this.data.rangeId);
+                this.fire(BaseEvents.RANGE_CHANGED, this.data.rangeId, range);
             } else {
                 this.data.rangeId = undefined;
                 this.helper.rangeId = null;
@@ -720,6 +720,13 @@ export class BaseExtension implements IExtension {
                 }
             }
             
+        }
+
+        if (!this.isCreated) {
+            if (this.data.startTime) {
+                // @todo check if in bounds.
+                $.publish(BaseEvents.CURRENT_TIME_CHANGED, [this.data.startTime]);
+            }
         }
     }
 
